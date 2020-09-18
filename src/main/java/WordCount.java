@@ -35,6 +35,8 @@ public class WordCount {
             }
         })//打平操作，把每行的单词转为<word,count>类型的数据
                 .keyBy("word")//针对相同的word数据进行分组
+                .timeWindow(Time.hours(1))
+                .allowedLateness(Time.minutes(1))
                 .sum("count");
 
         //把数据打印到控制台
