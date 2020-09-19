@@ -25,13 +25,15 @@ public class WaterMark {
         DataStream<SensorReading> dataStream = inputStream.map(new MapFunction<String, SensorReading>() {
             public SensorReading map(String s) throws Exception {
                 String[] arr = s.split(",");
-                if (arr.length == 3)
+                if (arr.length == 3) {
                     return new SensorReading(arr[0], Long.parseLong(arr[1]), Double.parseDouble(arr[2]));
-                else
+                }
+                else {
                     return new SensorReading("error", 0, 0);
+                }
             }
         }).assignTimestampsAndWatermarks(
-                new BoundedOutOfOrdernessTimestampExtractor<SensorReading>(Time.seconds(3)) {
+                new BoundedOutOfOrdernessTimestampExtractor<SensorReading>(Time.seconds(0)) {
                     @Override
                     public long extractTimestamp(SensorReading sensorReading) {
                         return sensorReading.ts * 1000L;
@@ -41,7 +43,7 @@ public class WaterMark {
         // 15s统计一次，窗口内各传感器所有温度任最小值，以及最新的时间戳
         DataStream<SensorReading> resultStream = dataStream
                 .keyBy("id")
-                .timeWindow(Time.seconds(5))
+                .timeWindow(Time.seconds(10))
                 //.allowedLateness(Time.minutes(1))
                 //.sideOutputLateData(new OutputTag<SensorReading>("late"))
                 .reduce(new ReduceFunction<SensorReading>() {
