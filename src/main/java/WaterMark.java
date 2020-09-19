@@ -1,16 +1,11 @@
-import com.oracle.webservices.internal.api.databinding.DatabindingMode;
 import domain.SensorReading;
-import lombok.Data;
 import org.apache.flink.api.common.functions.*;
-import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.api.functions.AssignerWithPeriodicWatermarks;
 import org.apache.flink.streaming.api.functions.timestamps.BoundedOutOfOrdernessTimestampExtractor;
 import org.apache.flink.streaming.api.windowing.time.Time;
-import org.apache.flink.util.Collector;
 import org.apache.flink.util.OutputTag;
 
 public class WaterMark {
@@ -30,7 +25,10 @@ public class WaterMark {
         DataStream<SensorReading> dataStream = inputStream.map(new MapFunction<String, SensorReading>() {
             public SensorReading map(String s) throws Exception {
                 String[] arr = s.split(",");
-                return new SensorReading(arr[0], Long.parseLong(arr[1]), Double.parseDouble(arr[2]));
+                if (arr.length == 3)
+                    return new SensorReading(arr[0], Long.parseLong(arr[1]), Double.parseDouble(arr[2]));
+                else
+                    return new SensorReading("error", 0, 0);
             }
         }).assignTimestampsAndWatermarks(
                 new BoundedOutOfOrdernessTimestampExtractor<SensorReading>(Time.seconds(3)) {
@@ -43,15 +41,15 @@ public class WaterMark {
         // 15s统计一次，窗口内各传感器所有温度任最小值，以及最新的时间戳
         DataStream<SensorReading> resultStream = dataStream
                 .keyBy("id")
-                .timeWindow(Time.seconds(15))
-                .allowedLateness(Time.minutes(1))
+                .timeWindow(Time.seconds(5))
+                //.allowedLateness(Time.minutes(1))
                 //.sideOutputLateData(new OutputTag<SensorReading>("late"))
                 .reduce(new ReduceFunction<SensorReading>() {
                     public SensorReading reduce(SensorReading sensorReading, SensorReading t1) throws Exception {
                         return new SensorReading(sensorReading.id, t1.ts, Math.min(sensorReading.tp, t1.tp));
                     }
                 });
-
+        //dataStream.print("dataStream");
         resultStream.print("output");
         env.execute("start job");
 
