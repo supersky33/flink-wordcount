@@ -55,8 +55,6 @@ class MyAlertFlatMapFunction extends RichFlatMapFunction<SensorReading, String> 
         this.threshold = _threshold;
     }
 
-    public MyAlertFlatMapFunction() {}
-
     @Override
     public void open(Configuration parameters) throws Exception {
         super.open(parameters);
