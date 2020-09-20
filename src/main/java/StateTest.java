@@ -49,31 +49,33 @@ public class StateTest {
 
     }
 
-}
+    static class MyAlertFlatMapFunction extends RichFlatMapFunction<SensorReading, String> {
 
-class MyAlertFlatMapFunction extends RichFlatMapFunction<SensorReading, String> {
+        private double threshold;
+        private ValueState<Double> valueState;
 
-    private double threshold;
-    private ValueState<Double> valueState;
-
-    public MyAlertFlatMapFunction(double _threshold) {
-        this.threshold = _threshold;
-    }
-
-    @Override
-    public void open(Configuration parameters) throws Exception {
-        super.open(parameters);
-        valueState = getRuntimeContext()
-                .getState(new ValueStateDescriptor<Double>("valueState", Double.class));
-    }
-
-    public void flatMap(SensorReading sensorReading, Collector<String> collector) throws Exception {
-        if (valueState.value() != null) {
-            double diff = Math.abs(sensorReading.tp - valueState.value());
-            if (diff > this.threshold) {
-                collector.collect(sensorReading.id + ":" + valueState.value() + "/" + sensorReading.tp);
-            }
+        public MyAlertFlatMapFunction(double _threshold) {
+            this.threshold = _threshold;
         }
-        valueState.update(sensorReading.tp);
+
+        @Override
+        public void open(Configuration parameters) throws Exception {
+            super.open(parameters);
+            valueState = getRuntimeContext()
+                    .getState(new ValueStateDescriptor<Double>("valueState", Double.class));
+        }
+
+        public void flatMap(SensorReading sensorReading, Collector<String> collector) throws Exception {
+            if (valueState.value() != null) {
+                double diff = Math.abs(sensorReading.tp - valueState.value());
+                if (diff > this.threshold) {
+                    collector.collect(sensorReading.id + ":" + valueState.value() + "/" + sensorReading.tp);
+                }
+            }
+            valueState.update(sensorReading.tp);
+        }
     }
+
+
 }
+
