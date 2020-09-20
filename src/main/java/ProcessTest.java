@@ -12,6 +12,9 @@ import org.apache.flink.streaming.api.functions.ProcessFunction;
 import org.apache.flink.util.Collector;
 import org.apache.flink.util.OutputTag;
 
+/**
+ * 注意： new OutputTag<String>("low"){}
+ */
 
 public class ProcessTest {
 
@@ -59,7 +62,7 @@ public class ProcessTest {
                 out.collect(value.toString());
             }
             else {
-                ctx.output(new OutputTag<String>("low"), value.toString());
+                ctx.output(new OutputTag<String>("low"){}, value.toString());
             }
         }
     }
