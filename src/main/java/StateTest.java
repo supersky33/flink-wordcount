@@ -9,6 +9,11 @@ import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.util.Collector;
 
+
+/**
+ * 时间状态，ValueState/ListState/MapState/ReduceState
+ */
+
 public class StateTest {
 
     public static void main(String[] args) throws Exception {
