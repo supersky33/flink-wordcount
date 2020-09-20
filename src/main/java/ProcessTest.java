@@ -41,7 +41,7 @@ public class ProcessTest {
         alertStream.print("high");
         alertStream.getSideOutput(new OutputTag<String>("low"){}).print("low");
 
-        env.execute("streaming word count");
+        env.execute("streaming word count ");
 
     }
 
