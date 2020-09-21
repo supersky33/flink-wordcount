@@ -2,6 +2,7 @@ import domain.SensorReading;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.state.ValueState;
 import org.apache.flink.api.common.state.ValueStateDescriptor;
+import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
@@ -36,13 +37,19 @@ public class ProcessTest {
             }
         });
 
+        DataStream<String> alertStream = dataStream
+                .keyBy("id")
+                .process(new MyKeyedProcessFunction(10 * 1000L));
 
-        SingleOutputStreamOperator<String> alertStream = dataStream
+        alertStream.print("alert-stream");
+
+
+        SingleOutputStreamOperator<String> splitStream = dataStream
                 .process(new MyProcessFunction(50.0));
-                //.process(new MyKeyedProcessFunction(10 * 1000L){});
+        //.process(new MyKeyedProcessFunction(10 * 1000L){});
 
-        alertStream.print("high");
-        alertStream.getSideOutput(new OutputTag<String>("low"){}).print("low");
+        splitStream.print("high");
+        splitStream.getSideOutput(new OutputTag<String>("low"){}).print("low");
 
         env.execute("streaming word count ");
 
@@ -67,7 +74,8 @@ public class ProcessTest {
         }
     }
 
-    static class MyKeyedProcessFunction extends KeyedProcessFunction<String,SensorReading,String> {
+
+    static class MyKeyedProcessFunction extends KeyedProcessFunction<Tuple,SensorReading,String> {
 
         private ValueState<Double> lastTempState = null;
         private ValueState<Long> timerTsState = null;
