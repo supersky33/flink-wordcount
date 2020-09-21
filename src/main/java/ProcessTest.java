@@ -22,6 +22,7 @@ public class ProcessTest {
     public static void main(String[] args) throws Exception {
 
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        // env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
         DataStreamSource<String> text = env.socketTextStream("localhost", 6677, "\n");
 
         DataStream<SensorReading> dataStream = text
@@ -77,8 +78,8 @@ public class ProcessTest {
 
     static class MyKeyedProcessFunction extends KeyedProcessFunction<Tuple,SensorReading,String> {
 
-        private ValueState<Double> lastTempState = null;
-        private ValueState<Long> timerTsState = null;
+        private ValueState<Double> lastTempState;
+        private ValueState<Long> timerTsState;
 
         private long interval;
 
@@ -99,12 +100,12 @@ public class ProcessTest {
 
         @Override
         public void processElement(SensorReading sensorReading, Context context, Collector<String> collector) throws Exception {
-            if (lastTempState != null) {
-                if (lastTempState.value() > sensorReading.tp) {
+            if (lastTempState.value() != null) {
+                if (lastTempState.value() > sensorReading.tp && timerTsState.value() != null) {
                     context.timerService().deleteProcessingTimeTimer(timerTsState.value());
-                    timerTsState = null;
+                    timerTsState.clear();
                 }
-                else if (lastTempState.value() < sensorReading.tp && timerTsState == null) {
+                else if (lastTempState.value() < sensorReading.tp && timerTsState.value() == null) {
                     long ts = context.timerService().currentProcessingTime() + this.interval; // +10S
                     context.timerService().registerProcessingTimeTimer(ts);
                     timerTsState.update(ts);
@@ -117,7 +118,7 @@ public class ProcessTest {
         public void onTimer(long timestamp, OnTimerContext ctx, Collector<String> out) throws Exception {
             super.onTimer(timestamp, ctx, out);
             out.collect("传感器:" + ctx.getCurrentKey() + "连续10秒上升");
-            timerTsState = null;
+            timerTsState.clear();
         }
 
 
