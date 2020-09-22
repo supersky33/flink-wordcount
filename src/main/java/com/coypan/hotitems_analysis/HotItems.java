@@ -2,7 +2,6 @@ package com.coypan.hotitems_analysis;
 
 import domain.ItemViewCount;
 import domain.UserBehavior;
-import lombok.Data;
 import org.apache.flink.api.common.functions.AggregateFunction;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.FlatMapFunction;
@@ -21,7 +20,6 @@ import org.apache.flink.streaming.api.functions.timestamps.BoundedOutOfOrderness
 import org.apache.flink.streaming.api.functions.windowing.WindowFunction;
 import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
-import org.apache.flink.streaming.api.windowing.windows.Window;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer;
 import org.apache.flink.util.Collector;
 
@@ -60,10 +58,10 @@ public class HotItems {
                 }
             }
         }).assignTimestampsAndWatermarks(
-                new BoundedOutOfOrdernessTimestampExtractor<UserBehavior>(Time.seconds(3)) {
+                new BoundedOutOfOrdernessTimestampExtractor<UserBehavior>(Time.seconds(0)) {
                     @Override
                     public long extractTimestamp(UserBehavior element) {
-                        return element.getTimestamp();
+                        return element.getTimestamp() * 1000L;
                     }
                 });
 
@@ -148,7 +146,7 @@ public class HotItems {
 
         @Override
         public void onTimer(long timestamp, OnTimerContext ctx, Collector<String> out) throws Exception {
-            super.onTimer(timestamp, ctx, out);
+            //super.onTimer(timestamp, ctx, out);
             List<ItemViewCount> tmpList = new ArrayList<ItemViewCount>();
             Iterator<ItemViewCount> iter = listState.get().iterator();
             while (iter.hasNext()) {
@@ -157,15 +155,15 @@ public class HotItems {
             listState.clear();
             Collections.sort(tmpList, new Comparator<ItemViewCount>() {
                 public int compare(ItemViewCount o1, ItemViewCount o2) {
-                    return (int)(o1.getCount() - o2.getCount());
+                    return (int)(o2.getCount() - o1.getCount());
                 }
             });
 
             StringBuilder sb = new StringBuilder();
             sb.append("[窗口结束时间：" + df.format(new Date(timestamp - 1)) + "]");
-            for (int i = 0; i < this.topN; i++) {
+            for (int i = 0; i < Math.min(this.topN,tmpList.size()); i++) {
                 ItemViewCount itemViewCount = tmpList.get(i);
-                sb.append("-id:" + itemViewCount.getItemId() + " -count:" +itemViewCount.getCount());
+                sb.append("\n==>id:" + itemViewCount.getItemId() + "\tcount:" +itemViewCount.getCount());
             }
             out.collect(sb.toString());
 

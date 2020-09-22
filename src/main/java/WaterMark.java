@@ -51,7 +51,7 @@ public class WaterMark {
                         return new SensorReading(sensorReading.id, t1.ts, Math.min(sensorReading.tp, t1.tp));
                     }
                 });
-        //dataStream.print("dataStream");
+        dataStream.print("dataStream");
         resultStream.print("output");
         env.execute("start job");
 
