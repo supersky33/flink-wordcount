@@ -138,10 +138,11 @@ public class HotItems {
             listState = getRuntimeContext().getListState(new ListStateDescriptor<ItemViewCount>("itemViewCount-list", ItemViewCount.class));
         }
 
+        @Override
         public void processElement(ItemViewCount itemViewCount, Context context, Collector<String> collector) throws Exception {
             listState.add(itemViewCount);
             // 注意：注册一个 windowEnd + 1之后的触发器
-            context.timerService().registerProcessingTimeTimer(itemViewCount.getWindowEnd() + 1);
+            context.timerService().registerEventTimeTimer(itemViewCount.getWindowEnd() + 1);
         }
 
         @Override

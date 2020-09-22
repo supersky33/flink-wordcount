@@ -102,12 +102,12 @@ public class ProcessTest {
         public void processElement(SensorReading sensorReading, Context context, Collector<String> collector) throws Exception {
             if (lastTempState.value() != null) {
                 if (lastTempState.value() > sensorReading.tp && timerTsState.value() != null) {
-                    context.timerService().deleteProcessingTimeTimer(timerTsState.value());
+                    context.timerService().deleteEventTimeTimer(timerTsState.value());
                     timerTsState.clear();
                 }
                 else if (lastTempState.value() < sensorReading.tp && timerTsState.value() == null) {
                     long ts = context.timerService().currentProcessingTime() + this.interval; // +10S
-                    context.timerService().registerProcessingTimeTimer(ts);
+                    context.timerService().registerEventTimeTimer(ts);
                     timerTsState.update(ts);
                 }
             }
